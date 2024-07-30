@@ -1,0 +1,25 @@
+<UI version="4.0" >
+ <class>DAQ_SystemClass</class>
+ <widget class="QWidget" name="DAQ_SystemClass" >
+  <property name="objectName" >
+   <string notr="true">DAQ_SystemClass</string>
+  </property>
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>DAQ_System</string>
+  </property>$centralwidget$
+ </widget>
+ <layoutDefault spacing="6" margin="11" />
+ <pixmapfunction></pixmapfunction>
+ <resources>
+   <include location="DAQ_System.qrc"/>
+ </resources>
+ <connections/>
+</UI>
