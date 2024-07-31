@@ -1,13 +1,13 @@
 #pragma once
 
+#include <iostream>
+#include <windows.h>
 #include <direct.h>
 #include <signal.h>
 #include <stdio.h>
-#include <windows.h>
 
 #include <chrono>
 #include <ctime>
-#include <iostream>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -35,6 +35,14 @@ using namespace std;
 #include "YOLOv8.h"
 #include "tinyxml.h"
 
+struct cow{
+    int cow_index;
+    float center_x;
+    float center_y;
+    cv::Rect bbox;
+    bool saved;
+    float confidence;
+};
 class DAQ_System : public QWidget {
   Q_OBJECT
 
@@ -62,6 +70,7 @@ class DAQ_System : public QWidget {
                                                             int dep_mode,
                                                             int fps);
   QImage opencv_to_QImage(cv::Mat cvImg);
+  double calculateIoU(const cv::Rect& rect1, const cv::Rect& rect2);
 
  protected:
   void closeEvent(QCloseEvent* event) override;
@@ -78,8 +87,9 @@ class DAQ_System : public QWidget {
  private:
   Ui::DAQ_SystemClass ui;
   const uint32_t MIN_TIME_BETWEEN_DEPTH_CAMERA_PICTURES_USEC = 160;
+  const double THRESHOLD_IOU = 0.5;
   bool isCameraRunning = false;  //是否相机开启
-  int cow_indx = 0;              //经过牛的索引
+  int cow_index = 0;              //经过牛的索引
 
   QTimer* timer;
   std::unique_ptr<MultiDeviceCapturer> capturer;
@@ -95,4 +105,5 @@ class DAQ_System : public QWidget {
   int count_tracking = 0;
   int count = 0;
   bool detected = false;
+  cow current_record_cow;
 };

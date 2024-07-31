@@ -37,13 +37,13 @@ void Yolov8::preprocess(const cv::Mat& image, cv::Mat& blob, int input_width,
 }
 
 // Helper function to draw the predictions on the image
-void Yolov8::drawPred(int classId, float conf, int left, int top, int right,
+void Yolov8::drawPred(int cow_index, float conf, int left, int top, int right,
                       int bottom, cv::Mat& frame) {
   cv::rectangle(frame, cv::Point(left, top), cv::Point(right, bottom),
                 cv::Scalar(0, 255, 0), 2);
 
   std::string label = cv::format("%.2f", conf);
-  label = "cow: " + label;
+  label = "cow " + std::to_string(cow_index) + ": " + label;
 
   int baseLine;
   cv::Size labelSize =
@@ -181,8 +181,7 @@ DetectResult Yolov8::Detect_with_result(cv::Mat& srcImg, cv::dnn::Net& net) {
   cv::dnn::NMSBoxes(boxes, confidences, confidence_threshold, nms_threshold,
                     indices);
 
-  // Step 5: Draw bounding boxes and labels on the image
-  
+  // Step 5: Return
   DetectResult result;
   result.boxes = boxes;
   result.classIds = classIds;

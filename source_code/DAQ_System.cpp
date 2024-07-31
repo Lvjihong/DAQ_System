@@ -20,6 +20,17 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
   //========================test opencv
   // tracking=================================
   init_cameras();
+
+  // 初始化当前记录的目标
+  cv::Rect init_bbox = cv::Rect(0, 0, 1, 1);
+  current_record_cow.bbox = init_bbox;
+  current_record_cow.center_x =
+      init_bbox.x + static_cast<float>(init_bbox.width) / 2.0f;
+  current_record_cow.center_y =
+      init_bbox.y + static_cast<float>(init_bbox.height) / 2.0f;
+  current_record_cow.cow_index = cow_index;
+  current_record_cow.saved = false;
+
   timer = new QTimer(this);
   // 加载模型
   std::string model_path = "./weights/best.onnx";
@@ -192,7 +203,7 @@ void DAQ_System::updateFrame() {
       cv::Mat cv_color = color_to_opencv(colorImage);
       cv::Mat cv_depth = depth_to_opencv(depthImage);
 
-      cv::Rect bbox(0, 0, 10, 10);
+      cv::Rect bbox(0, 0, 1, 1);
       cv::Mat color_img_clone = cv_color.clone();
 
       switch (i) {
@@ -204,21 +215,59 @@ void DAQ_System::updateFrame() {
           //}
           // cv::rectangle(cv_color, bbox, cv::Scalar(255, 0, 0), 2, 1);
           count++;
-          if (!detected || count % 30 == 0) {
+          if (!detected || count % 15 == 0) {
             DetectResult result = yolo.Detect_with_result(color_img_clone, net);
             if (!result.indices.empty()) {
               bbox = result.boxes[result.indices[0]];
+              double iou = calculateIoU(bbox, current_record_cow.bbox);
+              if (iou < THRESHOLD_IOU) {
+                current_record_cow.cow_index = ++count_detect;
+                current_record_cow.saved = false;
+                current_record_cow.confidence = result.confidences[0];
+              }
+              current_record_cow.bbox = bbox;
+              current_record_cow.center_x =
+                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
+              current_record_cow.center_y =
+                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
+
+              yolo.drawPred(current_record_cow.cow_index,
+                            current_record_cow.confidence, bbox.x, bbox.y,
+                            bbox.x + bbox.width, bbox.y + bbox.height,
+                            color_img_clone);
               tracker->init(color_img_clone, bbox);
               detected = true;
-              count_detect++;
+            } else {
+              current_record_cow.bbox = bbox;
+              current_record_cow.center_x =
+                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
+              current_record_cow.center_y =
+                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
+              detected = false;
+              emit(show_img(color_img_clone));
+              break;
             }
           }
           if (detected) {
             if (tracker->update(color_img_clone, bbox)) {
               count_tracking++;
+              double iou = calculateIoU(bbox, current_record_cow.bbox);
+              if (iou < THRESHOLD_IOU) {
+                detected = false;
+                emit(show_img(color_img_clone));
+                break;
+              }
+              current_record_cow.bbox = bbox;
+              current_record_cow.center_x =
+                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
+              current_record_cow.center_y =
+                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
+              yolo.drawPred(current_record_cow.cow_index,
+                            current_record_cow.confidence, bbox.x, bbox.y,
+                            bbox.x + bbox.width, bbox.y + bbox.height,
+                            color_img_clone);
               std::cout << "===============" << count_detect
                         << "======" << count_tracking << std::endl;
-              cv::rectangle(color_img_clone, bbox, cv::Scalar(255, 0, 0), 2, 1);
               emit(show_img(color_img_clone));
               break;
             } else {
@@ -403,4 +452,20 @@ k4a::image DAQ_System::create_depth_image_like(const k4a::image& im) {
   return k4a::image::create(
       K4A_IMAGE_FORMAT_DEPTH16, im.get_width_pixels(), im.get_height_pixels(),
       im.get_width_pixels() * static_cast<int>(sizeof(uint16_t)));
+}
+
+double DAQ_System::calculateIoU(const cv::Rect& rect1, const cv::Rect& rect2) {
+  // 计算交集
+  cv::Rect intersection = rect1 & rect2;
+  int intersectionArea = intersection.area();
+
+  // 如果没有交集，则IoU为0
+  if (intersectionArea == 0) return 0.0;
+
+  // 计算并集
+  int unionArea = rect1.area() + rect2.area() - intersectionArea;
+
+  // 计算IoU
+  double iou = static_cast<double>(intersectionArea) / unionArea;
+  return iou;
 }

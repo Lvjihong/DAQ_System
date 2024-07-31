@@ -1,2 +1,11 @@
-﻿  DAQ_System.cpp
+﻿  tinystr.cpp
+  tinyxml.cpp
+  tinyxmlerror.cpp
+  tinyxmlparser.cpp
+  YOLOv8.cpp
+  DAQ_System.cpp
+  main.cpp
+  qrc_DAQ_System.cpp
+  moc_DAQ_System.cpp
+qtmain.lib(qtmain_win.obj) : warning LNK4099: 未找到 PDB“qtmain.pdb”(使用“qtmain.lib(qtmain_win.obj)”或在“F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\qtmain.pdb”中寻找)；正在链接对象，如同没有调试信息一样
   DAQ_System.vcxproj -> F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\DAQ_System.exe
