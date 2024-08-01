@@ -2,23 +2,9 @@
 
 DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
   ui.setupUi(this);
-  //========================test opencv
-  // tracking=================================
-  // List of tracker types in OpenCV 3.4.1
-  std::string trackerTypes[1] = {"MIL"};
 
-  // Create a tracker
-  std::string trackerType = trackerTypes[0];
+  tracker = cv::TrackerCSRT::create();
 
-#if (CV_MINOR_VERSION < 3)
-  { tracker = Tracker::create(trackerType); }
-#else
-  {
-    if (trackerType == "MIL") tracker = cv::TrackerMIL::create();
-  }
-#endif
-  //========================test opencv
-  // tracking=================================
   init_cameras();
 
   // 初始化当前记录的目标
@@ -266,13 +252,11 @@ void DAQ_System::updateFrame() {
                             current_record_cow.confidence, bbox.x, bbox.y,
                             bbox.x + bbox.width, bbox.y + bbox.height,
                             color_img_clone);
-              std::cout << "===============" << count_detect
-                        << "======" << count_tracking << std::endl;
               emit(show_img(color_img_clone));
               break;
             } else {
               detected = false;
-              std::cout << "fail============" << std::endl;
+              std::cout << "===========fail============" << std::endl;
             }
           }
           emit(show_img(color_img_clone));
@@ -287,13 +271,12 @@ void DAQ_System::updateFrame() {
           break;
         default:
           break;
-
-          colorImage.reset();
-          depthImage.reset();
-          color_img_clone.release();
-          cv_color.release();
-          cv_depth.release();
       }
+      colorImage.reset();
+      depthImage.reset();
+      color_img_clone.release();
+      cv_color.release();
+      cv_depth.release();
     }
   }
 }
