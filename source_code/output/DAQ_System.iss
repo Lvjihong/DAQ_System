@@ -36,10 +36,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\k4a.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\k4arecord.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\depthengine_2_0.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\opencv\opencv\build\x64\vc16\bin\opencv_world480.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\*.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "F:\Qt\Qt5.14.2\5.14.2\msvc2017_64\bin\Qt5Core.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "F:\Qt\Qt5.14.2\5.14.2\msvc2017_64\bin\Qt5Gui.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "F:\Qt\Qt5.14.2\5.14.2\msvc2017_64\bin\Qt5Widgets.dll"; DestDir: "{app}"; Flags: ignoreversion

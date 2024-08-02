@@ -3,10 +3,10 @@
 DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
   ui.setupUi(this);
 
+  // 创建跟踪器
   tracker = cv::TrackerCSRT::create();
-
+  // 初始化相机，如果没连接摄像头程序无法启动
   init_cameras();
-
   // 初始化当前记录的目标
   cv::Rect init_bbox = cv::Rect(0, 0, 1, 1);
   current_record_cow.bbox = init_bbox;
@@ -55,6 +55,7 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
 }
 
 DAQ_System::~DAQ_System() { on_stopButton_clicked(); }
+// 重写关闭事件
 void DAQ_System::closeEvent(QCloseEvent* event) {
   QMessageBox::StandardButton resBtn = QMessageBox::question(
       this, "Confirm Exit", QString::fromLocal8Bit("确定退出程序吗？"),
@@ -68,28 +69,26 @@ void DAQ_System::closeEvent(QCloseEvent* event) {
     event->accept();
   }
 }
+// 初始化相机
 void DAQ_System::init_cameras() {
   int color_res = 1;
   int dep_mode = 3;
   int fps = 2;
-  std::string root_dir = "F:/DAQ_System/";
   int32_t color_exposure_usec = 33000;
   vector<uint32_t> device_indices{0, 1, 2};
   int32_t powerline_freq = 1;   // default to a 60 Hz powerline，1for 50hz
   float depth_threshold = 2.0;  // default to 2 meter
 
-  int photo_num = 5;  //相机连续拍摄的张数
+  std::string root_dir = "F:/DAQ_System/";
+  // 从配置文件获取基本参数
   xmlparse(device_indices, color_exposure_usec, color_res, dep_mode, fps,
-           root_dir, photo_num);
-  std::vector<k4a::calibration> cali_list(num_devices);
-  // std::string save_dir = create_dir(root_dir);//创建文件夹
+           root_dir);
   capturer = std::make_unique<MultiDeviceCapturer>(
       device_indices, color_exposure_usec, powerline_freq);
-  // MultiDeviceCapturer capturer = MultiDeviceCapturer(device_indices,
-  // color_exposure_usec, powerline_freq);
+
+  // 从相机获取内参
   main_config = get_master_config(color_res, dep_mode, fps);
   secondary_config = get_subordinate_config(color_res, dep_mode, fps);
-
   for (int i = 0; i < num_devices; i++) {
     if (i == 0) {
       k4a::calibration k4aCalibration =
@@ -103,7 +102,9 @@ void DAQ_System::init_cameras() {
       cali_list[i] = k4aCalibration;
     }
   }
-  xmlset(cali_list);  //设置相关参数
+
+  xmlparse(trans_sub2_sub1, trans_main_sub1, cali_list);
+  // xmlset(cali_list);  //设置相关参数
 }
 void DAQ_System::on_startButton_clicked() {
   if (!isCameraRunning) {
@@ -135,10 +136,15 @@ void DAQ_System::on_captureButton_clicked() {
         std::vector<std::string> name_list = {"master", "sub1", "sub2"};
         std::string save_dep_path = save_dir + "/depth";
         std::string save_color_path = save_dir + "/color";
+        std::string save_point_cloud_path = save_dir + "/point_cloud";
         if (_mkdir(save_dep_path.c_str()) == 0 &&
-            _mkdir(save_color_path.c_str()) == 0) {
+            _mkdir(save_color_path.c_str()) == 0&&_mkdir(save_point_cloud_path.c_str()) == 0) {
           k4a::image colorImage;
           k4a::image depthImage;
+          pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud(
+              new pcl::PointCloud<pcl::PointXYZRGB>);
+          std::string whole_point_cloud_path =
+                save_point_cloud_path + "/" + std::to_string(current_record_cow.cow_index) + ".pcd";
           for (int i = 0; i < 3; i++) {
             k4a::capture tempcapture = captures[i];
             colorImage = tempcapture.get_color_image();
@@ -149,13 +155,77 @@ void DAQ_System::on_captureButton_clicked() {
                 save_dep_path + "/" + name_list[i] + ".png";
             std::string color_came_path =
                 save_color_path + "/" + name_list[i] + ".png";
+            std::string point_cloud_path =
+                save_point_cloud_path + "/" + name_list[i] + ".pcd";
+            // 保存rgb和depth图像
             cv::imwrite(color_came_path, cv_color);
             cv::imwrite(dep_came_path, cv_depth);
+            // 生成点云
+            k4a::image dep_data = k4a::image::create_from_buffer(
+                K4A_IMAGE_FORMAT_DEPTH16, cv_depth.size().width,
+                cv_depth.size().height,
+                cv_depth.size().width * static_cast<int>(sizeof(uint16_t)),
+                cv_depth.data,
+                cv_depth.size().height * cv_depth.size().width *
+                    static_cast<int>(sizeof(uint8_t)),
+                NULL, NULL);
+            k4a::transformation trans(cali_list[i]);
+
+            k4a::image trans_dep = create_depth_image_like(
+                cv_color.size().width, cv_color.size().height);
+            k4a::image cloud_image = k4a::image::create(
+                K4A_IMAGE_FORMAT_CUSTOM, cv_color.size().width,
+                cv_color.size().height,
+                cv_color.size().width * 3 * (int)sizeof(int16_t));  //点云
+            trans.depth_image_to_color_camera(dep_data, &trans_dep);
+
+            trans.depth_image_to_point_cloud(
+                trans_dep, K4A_CALIBRATION_TYPE_COLOR, &cloud_image);
+            pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+                new pcl::PointCloud<pcl::PointXYZRGB>);
+            cloud->is_dense = true;
+            const int16_t* cloud_image_data =
+                reinterpret_cast<const int16_t*>(cloud_image.get_buffer());
+            int wid = cv_color.size().width;  //图片宽度
+            for (size_t h = 0; h < cv_color.size().height; h++) {
+              for (size_t w = 0; w < cv_color.size().width; w++) {
+                pcl::PointXYZRGB point;
+                size_t indx0 = h * wid + w;
+                point.x = cloud_image_data[3 * indx0 + 0] / 1000.0f;
+                point.y = cloud_image_data[3 * indx0 + 1] / 1000.0f;
+                point.z = cloud_image_data[3 * indx0 + 2] / 1000.0f;
+
+                point.b = cv_color.at<cv::Vec3b>(h, w)[0];
+                point.g = cv_color.at<cv::Vec3b>(h, w)[1];
+                point.r = cv_color.at<cv::Vec3b>(h, w)[2];
+                if (point.x == 0 && point.y == 0 && point.z == 0) continue;
+                cloud->push_back(point);
+              }
+            }
+            pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
+            if (i == 0) {
+              pcl::PointCloud<pcl::PointXYZRGB>::Ptr trans_cloud(
+                  new pcl::PointCloud<pcl::PointXYZRGB>);
+              pcl::transformPointCloud(
+                  *cloud, *trans_cloud,
+                  trans_main_sub1);  // cow inverse sheep no
+              *result_cloud = (*result_cloud) + (*trans_cloud);
+
+            } else if (i == 2) {
+              pcl::PointCloud<pcl::PointXYZRGB>::Ptr trans_cloud(
+                  new pcl::PointCloud<pcl::PointXYZRGB>);
+              pcl::transformPointCloud(*cloud, *trans_cloud, trans_sub2_sub1);
+              *result_cloud = (*result_cloud) + (*trans_cloud);
+            } else {
+              *result_cloud = (*result_cloud) + (*cloud);
+            }
+
             colorImage.reset();
             depthImage.reset();
             cv_color.release();
             cv_depth.release();
           }
+           pcl::io::savePCDFileASCII(whole_point_cloud_path, *result_cloud);
         }
       }
     }).detach();
@@ -352,12 +422,19 @@ k4a_device_configuration_t DAQ_System::get_subordinate_config(int color_res,
 }
 void DAQ_System::xmlparse(vector<uint32_t>& device_indices,
                           int32_t& exposure_time, int& color_res, int& dep_mode,
-                          int& fps, std::string& root_dir, int& photo_num) {
+                          int& fps, std::string& root_dir) {
   const char* xml_path = "./config/config_cpp.xml";
   TiXmlDocument doc;
   doc.LoadFile(xml_path);
   TiXmlElement* arg = doc.FirstChildElement();
-  // TiXmlElement* arg = root->FirstChildElement();
+
+  std::vector<const char*> list_device = {"master", "sub1", "sub2"};
+  std::vector<std::string> row_name = {"a", "b", "c", "d"};  //矩阵的行名称
+  std::vector<std::string> col_name = {
+      "cx", "cy", "fx",   "fy",   "k1", "k2", "k3",           "k4",
+      "k5", "k6", "codx", "cody", "p2", "p1", "metric_radius"};
+  TiXmlElement* trans1 = arg->FirstChildElement("trans_sub2_sub1");
+  TiXmlElement* trans2 = arg->FirstChildElement("trans_main_sub1");
 
   device_indices[0] =
       std::atoi(arg->FirstChildElement("master_idx")->GetText());
@@ -368,7 +445,60 @@ void DAQ_System::xmlparse(vector<uint32_t>& device_indices,
   dep_mode = std::atoi(arg->FirstChildElement("dep_mode")->GetText());
   fps = std::atoi(arg->FirstChildElement("fps")->GetText());
   root_dir = arg->FirstChildElement("save_dir")->GetText();
-  photo_num = std::atoi(arg->FirstChildElement("photo_num")->GetText());
+}
+
+void DAQ_System::xmlparse(Eigen::Matrix4f& trans_sub2_sub1,
+                          Eigen::Matrix4f& trans_main_sub1,
+                          std::vector<k4a::calibration>& cali_list) {
+  const char* xml_path = "./config/config_cpp.xml";
+  TiXmlDocument doc;
+  doc.LoadFile(xml_path);
+  TiXmlElement* arg = doc.FirstChildElement();
+  std::vector<const char*> list_device = {"master", "sub1", "sub2"};
+  std::vector<std::string> row_name = {"a", "b", "c", "d"};  //矩阵的行名称
+  // std::vector<std::string> col_name = {
+  //    "cx", "cy", "fx",   "fy",   "k1", "k2", "k3",           "k4",
+  //    "k5", "k6", "codx", "cody", "p2", "p1", "metric_radius" };
+  TiXmlElement* trans1 = arg->FirstChildElement("trans_sub2_sub1");
+  TiXmlElement* trans2 = arg->FirstChildElement("trans_main_sub1");
+
+  for (int i = 1; i <= 4; i++)  //行
+  {
+    for (int j = 1; j <= 4; j++)  //列
+    {
+      std::string name = row_name[i - 1] + std::to_string(j);
+      // cout << name;////////////////
+      trans_sub2_sub1(i - 1, j - 1) =
+          std::atof(trans1->FirstChildElement(name.c_str())->GetText());
+      trans_main_sub1(i - 1, j - 1) =
+          std::atof(trans2->FirstChildElement(name.c_str())->GetText());
+    }
+  }
+  for (int k = 0; k < 3; k++) {
+    k4a_calibration_extrinsics_t& ex =
+        cali_list[k]
+            .extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
+    const char* name = list_device[k];
+    TiXmlElement* dev = arg->FirstChildElement(name);  //设备
+    TiXmlElement* mat_d2c = dev->FirstChildElement("d2c");
+    for (int i = 1; i <= 4; i++) {
+      for (int j = 1; j <= 4; j++) {
+        std::string node_label = row_name[i - 1] + std::to_string(j);  //标签名
+        if (i > 3) {
+          continue;
+        } else {
+          if (j > 3) {
+            ex.translation[i - 1] = std::atof(
+                mat_d2c->FirstChildElement(node_label.c_str())->GetText());
+
+          } else {
+            ex.rotation[(i - 1) * 3 + (j - 1)] = std::atof(
+                mat_d2c->FirstChildElement(node_label.c_str())->GetText());
+          }
+        }
+      }
+    }  //外参矩阵
+  }
 }
 void DAQ_System::xmlset(const vector<k4a::calibration> cali_list) {
   const char* xml_path = "./config/config_cpp.xml";
@@ -436,7 +566,10 @@ k4a::image DAQ_System::create_depth_image_like(const k4a::image& im) {
       K4A_IMAGE_FORMAT_DEPTH16, im.get_width_pixels(), im.get_height_pixels(),
       im.get_width_pixels() * static_cast<int>(sizeof(uint16_t)));
 }
-
+k4a::image DAQ_System::create_depth_image_like(int w, int h) {
+  return k4a::image::create(K4A_IMAGE_FORMAT_DEPTH16, w, h,
+                            w * static_cast<int>(sizeof(uint16_t)));
+}
 double DAQ_System::calculateIoU(const cv::Rect& rect1, const cv::Rect& rect2) {
   // 计算交集
   cv::Rect intersection = rect1 & rect2;
