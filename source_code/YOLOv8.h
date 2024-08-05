@@ -17,7 +17,7 @@ class Yolov8 {
   bool Detect(cv::Mat& srcImg, cv::dnn::Net& net);
   DetectResult Detect_with_result(cv::Mat& srcImg,
                                              cv::dnn::Net& net);
-  void preprocess(const cv::Mat& image, cv::Mat& blob, int input_width,
+  void preprocess(const cv::Mat& image, cv::Mat& blob, cv::Vec4d& params, int input_width,
                   int input_height);
   void drawPred(int classId, float conf, int left, int top, int right,
                 int bottom, cv::Mat& frame);

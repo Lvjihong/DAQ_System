@@ -44,9 +44,14 @@ Source: "F:\Qt\Qt5.14.2\5.14.2\msvc2017_64\plugins\*"; DestDir: "{app}"; Flags: 
 Source: "C:\Windows\System32\kernel32.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Windows\SysWOW64\shell32.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Windows\SysWOW64\advapi32.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\weights\best.onnx"; DestDir: "{app}\weights"; Flags: ignoreversion
+Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\weights\last_best.onnx"; DestDir: "{app}\weights"; Flags: ignoreversion
 Source: "F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\config\config_cpp.xml"; DestDir: "{app}\config"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
+
+[Dirs]
+; 在安装目录下创建文件夹
+Name: "F:\DAQ_System\data\show_data"
+Name: "F:\DAQ_System\data\saved_data"
 
 [Registry]
 Root: HKA; Subkey: "Software\Classes\{#MyAppAssocExt}\OpenWithProgids"; ValueType: string; ValueName: "{#MyAppAssocKey}"; ValueData: ""; Flags: uninsdeletevalue
