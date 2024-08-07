@@ -79,17 +79,17 @@ class DAQ_System : public QWidget {
   QImage opencv_to_QImage(cv::Mat cvImg);
   double calculateIoU(const cv::Rect& rect1, const cv::Rect& rect2);
   void save_all_data(const std::string save_dir, const bool need_show,
-                     const vector<k4a::capture> captures);
+                     const k4a::capture capture);
 
  protected:
   void closeEvent(QCloseEvent* event) override;
  signals:
   void show_img(cv::Mat);
-  void save_data(const cv::Point& center, const int cow_index);
+  void save_data(const cv::Point& center, const int cow_index, const k4a::capture capture);
 
  public slots:
   void on_startButton_clicked();
-  void on_captureButton_clicked(const cv::Point& center, const int cow_index);
+  void on_captureButton_clicked(const cv::Point& center, const int cow_index, const k4a::capture capture);
   void on_stopButton_clicked();
   void updateFrame();
   void showImg(cv::Mat img);
@@ -102,10 +102,13 @@ class DAQ_System : public QWidget {
   int cow_index = 0;             //经过牛的索引
 
   QTimer* timer;
-  std::unique_ptr<MultiDeviceCapturer> capturer;
-  k4a_device_configuration_t main_config;
-  k4a_device_configuration_t secondary_config;
-  size_t num_devices = 3;
+  //std::unique_ptr<MultiDeviceCapturer> capturer;
+  //k4a_device_configuration_t main_config;
+  //k4a_device_configuration_t secondary_config;
+  k4a::device device;
+  k4a::capture capture;
+  k4a_device_configuration_t config;
+  size_t num_devices = 1;
   std::vector<k4a::calibration> cali_list =
       std::vector<k4a::calibration>(num_devices);
   Eigen::Matrix4f trans_sub2_sub1;

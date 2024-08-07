@@ -46,7 +46,7 @@ void DAQ_System::closeEvent(QCloseEvent* event) {
     event->ignore();
   } else {
     on_stopButton_clicked();
-    capturer->close_devices();
+    device.close();
     event->accept();
   }
 }
@@ -56,68 +56,93 @@ void DAQ_System::init_cameras() {
   int dep_mode = 3;
   int fps = 2;
   int32_t color_exposure_usec = 33000;
-  vector<uint32_t> device_indices{0, 1, 2};
-  int32_t powerline_freq = 1;   // default to a 60 Hz powerline，1for 50hz
-  float depth_threshold = 2.0;  // default to 2 meter
-
+  int32_t powerline_freq = 1;  // default to a 60 Hz powerline，1for 50hz
   std::string root_dir = "F:/DAQ_System/";
-  // 从配置文件获取基本参数
-  xmlparse(device_indices, color_exposure_usec, color_res, dep_mode, fps,
-           root_dir);
-  capturer = std::make_unique<MultiDeviceCapturer>(
-      device_indices, color_exposure_usec, powerline_freq);
 
-  // 从相机获取内参
-  main_config = get_master_config(color_res, dep_mode, fps);
-  secondary_config = get_subordinate_config(color_res, dep_mode, fps);
-  for (int i = 0; i < num_devices; i++) {
-    if (i == 0) {
-      k4a::calibration k4aCalibration =
-          capturer->get_master_device().get_calibration(
-              main_config.depth_mode, main_config.color_resolution);
-      cali_list[i] = k4aCalibration;
-    } else {
-      k4a::calibration k4aCalibration =
-          capturer->get_subordinate_device_by_index(i - 1).get_calibration(
-              main_config.depth_mode, main_config.color_resolution);
-      cali_list[i] = k4aCalibration;
+  const uint32_t device_count = k4a::device::get_installed_count();
+  if (0 == device_count) {
+    cout << "Error: no K4A devices found. " << endl;
+    return;
+  } else {
+    std::cout << "Found " << device_count << " connected devices. "
+              << std::endl;
+    if (1 != device_count)  // 超过1个设备，也输出错误信息。
+    {
+      std::cout << "Error: more than one K4A devices found. " << std::endl;
+      return;
+    } else  // 该示例代码仅限对1个设备操作
+    {
+      std::cout << "Done: found 1 K4A device. " << std::endl;
     }
   }
-
-  xmlparse(trans_sub2_sub1, trans_main_sub1, cali_list);
-  xmlset(cali_list);  //设置相关参数
+  //打开（默认）设备
+  device = k4a::device::open(K4A_DEVICE_DEFAULT);
+  device.set_color_control(K4A_COLOR_CONTROL_EXPOSURE_TIME_ABSOLUTE,
+                           K4A_COLOR_CONTROL_MODE_MANUAL, color_exposure_usec);
+  device.set_color_control(K4A_COLOR_CONTROL_POWERLINE_FREQUENCY,
+                           K4A_COLOR_CONTROL_MODE_MANUAL, powerline_freq);
+  config = get_default_config(color_res, dep_mode, fps);
+  config.synchronized_images_only = true;
+  k4a::calibration k4aCalibration =
+      device.get_calibration(config.depth_mode, config.color_resolution);
+  cali_list[0] = k4aCalibration;
+  std::cout << "Done: open device. " << std::endl;
 }
 void DAQ_System::on_startButton_clicked() {
   if (!isCameraRunning) {
     if (num_devices > k4a::device::get_installed_count()) {
       QMessageBox::critical(nullptr, QString::fromLocal8Bit("错误"),
-                            QString::fromLocal8Bit("未连接三个摄像头！"),
+                            QString::fromLocal8Bit("未连接摄像头！"),
                             QMessageBox::Ok);
       return;
     }  //如果设备不够则退出
-    capturer->start_devices(main_config, secondary_config);
+    device.start_cameras(&config);
+    int iAuto = 0;       //用来稳定，类似自动曝光
+    int iAutoError = 0;  // 统计自动曝光的失败次数
+    while (true) {
+      if (device.get_capture(&capture)) {
+        std::cout << iAuto << ". Capture several frames to give auto-exposure"
+                  << std::endl;
+
+        //跳过前 n 个（成功的数据采集）循环，用来稳定
+        if (iAuto != 30) {
+          iAuto++;
+          continue;
+        } else {
+          std::cout << "Done: auto-exposure" << std::endl;
+          break;  // 跳出该循环，完成相机的稳定过程
+        }
+
+      } else {
+        std::cout << iAutoError << ". K4A_WAIT_RESULT_TIMEOUT." << std::endl;
+        if (iAutoError != 30) {
+          iAutoError++;
+          continue;
+        } else {
+          std::cout << "Error: failed to give auto-exposure. " << std::endl;
+          return;
+        }
+      }
+    }
     isCameraRunning = true;
     timer->start(30);
   }
 }
 
 void DAQ_System::on_captureButton_clicked(const cv::Point& center,
-                                          const int cow_index) {
+                                          const int cow_index, const k4a::capture capture) {
   if (isCameraRunning) {
-    vector<k4a::capture> captures =
-        capturer->get_synchronized_captures(secondary_config, true);
     std::thread([=]() {
       std::string root_dir_path = "F:/DAQ_System/data/saved_data";
       // 判断目标是否走到中心，true保存两次，false保存一次
-      k4a::capture tempcapture = captures[0];
-      k4a::image colorImage = tempcapture.get_color_image();
+      k4a::image colorImage = capture.get_color_image();
       cv::Mat cv_color = color_to_opencv(colorImage);
       cv::Point view_center(cv_color.cols / 2, cv_color.rows / 2);
-      if (cv::norm(view_center - center) < 50 && !current_record_cow.saved) {
+      if (cv::norm(view_center - center) < 80 && !current_record_cow.saved) {
         std::string show_dir_path =
             "F:/DAQ_System/data/show_data/" +
             std::to_string(current_record_cow.cow_index);
-        save_all_data(show_dir_path, true, captures);
+        save_all_data(show_dir_path, true, capture);
         current_record_cow.saved = true;
       }
       auto tp = std::chrono::system_clock::now();
@@ -126,12 +151,12 @@ void DAQ_System::on_captureButton_clicked(const cv::Point& center,
       ss << root_dir_path << "/"
          << std::put_time(std::localtime(&raw_time), "%Y-%m-%d-%H-%M-%S");
       std::string save_dir = ss.str();
-      save_all_data(save_dir, false, captures);
+      save_all_data(save_dir, false, capture);
     }).detach();
   }
 }
 void DAQ_System::on_stopButton_clicked() {
-  if (isCameraRunning && capturer) {
+  if (isCameraRunning && capture) {
     std::this_thread::sleep_for(
         std::chrono::milliseconds(2000));  //等待所有存储线程执行完毕
     QImage blackImage(640, 480, QImage::Format_RGB888);
@@ -139,120 +164,98 @@ void DAQ_System::on_stopButton_clicked() {
     ui.mainView->setPixmap(QPixmap::fromImage(blackImage));
     ui.subView1->setPixmap(QPixmap::fromImage(blackImage));
     ui.subView2->setPixmap(QPixmap::fromImage(blackImage));
-    capturer->stop_devices();
+    capture.reset();
+    device.stop_cameras();
     isCameraRunning = false;
     timer->stop();
     detected = false;
   }
 }
 void DAQ_System::updateFrame() {
-  if (isCameraRunning && capturer) {
-    vector<k4a::capture> captures;
-    captures = capturer->get_synchronized_captures(secondary_config, true);
+  device.get_capture(&capture);
+  if (isCameraRunning && capture) {
     k4a::image colorImage;
     k4a::image depthImage;
-    for (int i = 0; i < 3; i++) {
-      k4a::capture tempcapture = captures[i];
-      colorImage = tempcapture.get_color_image();
-      depthImage = tempcapture.get_depth_image();
-      cv::Mat cv_color = color_to_opencv(colorImage);
-      cv::Mat cv_depth = depth_to_opencv(depthImage);
+    // 获取相机（只有单视角）
+    colorImage = capture.get_color_image();
+    depthImage = capture.get_depth_image();
+    cv::Mat cv_color = color_to_opencv(colorImage);
+    cv::Mat cv_depth = depth_to_opencv(depthImage);
 
-      cv::Rect bbox(0, 0, 1, 1);
-      cv::Mat color_img_clone = cv_color.clone();
+    cv::Rect bbox(0, 0, 1, 1);
+    cv::Mat color_img_clone = cv_color.clone();
 
-      switch (i) {
-        case 0:
-          // if (yolo.Detect(color_img_clone, net)) {
-          //  emit(show_img(color_img_clone));
-          //} else {
-          //  emit(show_img(cv_color));
-          //}
-          // cv::rectangle(cv_color, bbox, cv::Scalar(255, 0, 0), 2, 1);
-          count++;
-          if (!detected || count % 15 == 0) {
-            DetectResult result = yolo.Detect_with_result(color_img_clone, net);
-            if (!result.indices.empty()) {
-              bbox = result.boxes[result.indices[0]];
-              double iou = calculateIoU(bbox, current_record_cow.bbox);
-              if (iou < THRESHOLD_IOU) {
-                current_record_cow.cow_index = ++count_detect;
-                current_record_cow.saved = false;
-                current_record_cow.confidence = result.confidences[0];
-              }
-              current_record_cow.bbox = bbox;
-              current_record_cow.center_x =
-                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
-              current_record_cow.center_y =
-                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
+    count++;
+    if (!detected || count % 15 == 0) {
+      DetectResult result = yolo.Detect_with_result(color_img_clone, net);
+      if (!result.indices.empty()) {
+        bbox = result.boxes[result.indices[0]];
+        double iou = calculateIoU(bbox, current_record_cow.bbox);
+        if (iou < THRESHOLD_IOU) {
+          current_record_cow.cow_index = ++count_detect;
+          current_record_cow.saved = false;
+          current_record_cow.confidence = result.confidences[0];
+        }
+        current_record_cow.bbox = bbox;
+        current_record_cow.center_x =
+            bbox.x + static_cast<float>(bbox.width) / 2.0f;
+        current_record_cow.center_y =
+            bbox.y + static_cast<float>(bbox.height) / 2.0f;
 
-              yolo.drawPred(current_record_cow.cow_index,
-                            current_record_cow.confidence, bbox.x, bbox.y,
-                            bbox.x + bbox.width, bbox.y + bbox.height,
-                            color_img_clone);
-              emit(save_data(
-                  cv::Point(bbox.x + bbox.width / 2, bbox.y + bbox.height / 2),
-                  current_record_cow.cow_index));
-              tracker->init(color_img_clone, bbox);
-              detected = true;
-            } else {
-              current_record_cow.bbox = bbox;
-              current_record_cow.center_x =
-                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
-              current_record_cow.center_y =
-                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
-              detected = false;
-              emit(show_img(color_img_clone));
-              break;
-            }
-          }
-          if (detected) {
-            if (tracker->update(color_img_clone, bbox)) {
-              count_tracking++;
-              double iou = calculateIoU(bbox, current_record_cow.bbox);
-              if (iou < THRESHOLD_IOU) {
-                detected = false;
-                emit(show_img(color_img_clone));
-                break;
-              }
-              current_record_cow.bbox = bbox;
-              current_record_cow.center_x =
-                  bbox.x + static_cast<float>(bbox.width) / 2.0f;
-              current_record_cow.center_y =
-                  bbox.y + static_cast<float>(bbox.height) / 2.0f;
-              yolo.drawPred(current_record_cow.cow_index,
-                            current_record_cow.confidence, bbox.x, bbox.y,
-                            bbox.x + bbox.width, bbox.y + bbox.height,
-                            color_img_clone);
-              emit(save_data(
-                  cv::Point(bbox.x + bbox.width / 2, bbox.y + bbox.height / 2),
-                  current_record_cow.cow_index));
-              emit(show_img(color_img_clone));
-              break;
-            } else {
-              detected = false;
-              std::cout << "===========fail============" << std::endl;
-            }
-          }
-          emit(show_img(color_img_clone));
-          break;
-        case 1:
-          ui.subView1->setPixmap(
-              QPixmap::fromImage(opencv_to_QImage(color_img_clone)));
-          break;
-        case 2:
-          ui.subView2->setPixmap(
-              QPixmap::fromImage(opencv_to_QImage(color_img_clone)));
-          break;
-        default:
-          break;
+        yolo.drawPred(
+            current_record_cow.cow_index, current_record_cow.confidence, bbox.x,
+            bbox.y, bbox.x + bbox.width, bbox.y + bbox.height, color_img_clone);
+        emit(save_data(
+            cv::Point(bbox.x + bbox.width / 2, bbox.y + bbox.height / 2),
+            current_record_cow.cow_index, capture));
+        tracker->init(color_img_clone, bbox);
+        detected = true;
+      } else {
+        current_record_cow.bbox = bbox;
+        current_record_cow.center_x =
+            bbox.x + static_cast<float>(bbox.width) / 2.0f;
+        current_record_cow.center_y =
+            bbox.y + static_cast<float>(bbox.height) / 2.0f;
+        detected = false;
       }
-      colorImage.reset();
-      depthImage.reset();
-      color_img_clone.release();
-      cv_color.release();
-      cv_depth.release();
     }
+    if (detected) {
+      if (tracker->update(color_img_clone, bbox)) {
+        count_tracking++;
+        double iou = calculateIoU(bbox, current_record_cow.bbox);
+        if (iou < THRESHOLD_IOU) {
+          detected = false;
+          emit(show_img(color_img_clone));
+          current_record_cow.bbox = bbox;
+          current_record_cow.center_x =
+              bbox.x + static_cast<float>(bbox.width) / 2.0f;
+          current_record_cow.center_y =
+              bbox.y + static_cast<float>(bbox.height) / 2.0f;
+          return;
+        }
+        current_record_cow.bbox = bbox;
+        current_record_cow.center_x =
+            bbox.x + static_cast<float>(bbox.width) / 2.0f;
+        current_record_cow.center_y =
+            bbox.y + static_cast<float>(bbox.height) / 2.0f;
+        yolo.drawPred(
+            current_record_cow.cow_index, current_record_cow.confidence, bbox.x,
+            bbox.y, bbox.x + bbox.width, bbox.y + bbox.height, color_img_clone);
+        emit(save_data(
+            cv::Point(bbox.x + bbox.width / 2, bbox.y + bbox.height / 2),
+            current_record_cow.cow_index, capture));
+      } else {
+        detected = false;
+        std::cout << "===========fail============" << std::endl;
+      }
+    }
+    emit(show_img(color_img_clone));
+
+    colorImage.reset();
+    depthImage.reset();
+    color_img_clone.release();
+    cv_color.release();
+    cv_depth.release();
   }
 }
 void DAQ_System::showImg(cv::Mat cv_color) {
@@ -491,109 +494,84 @@ double DAQ_System::calculateIoU(const cv::Rect& rect1, const cv::Rect& rect2) {
   return iou;
 }
 void DAQ_System::save_all_data(const std::string save_dir, const bool need_show,
-                               const vector<k4a::capture> captures) {
+                               const k4a::capture capture) {
   if (_mkdir(save_dir.c_str()) == 0) {
     std::vector<std::string> name_list = {"master", "sub1", "sub2"};
     std::string save_dep_path = save_dir + "/depth";
     std::string save_color_path = save_dir + "/color";
     std::string save_point_cloud_path = save_dir + "/point_cloud";
-    bool flag = true;
+    bool flag = false;
     if (need_show) {
       flag = _mkdir(save_point_cloud_path.c_str());
     }
     if (_mkdir(save_dep_path.c_str()) == 0 &&
-        _mkdir(save_color_path.c_str()) == 0 && flag) {
+        _mkdir(save_color_path.c_str()) == 0 && !flag) {
       k4a::image colorImage;
       k4a::image depthImage;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud(
           new pcl::PointCloud<pcl::PointXYZRGB>);
-      std::string whole_point_cloud_path =
-          save_point_cloud_path + "/" +
-          std::to_string(current_record_cow.cow_index) + ".pcd";
-      for (int i = 0; i < 3; i++) {
-        k4a::capture tempcapture = captures[i];
-        colorImage = tempcapture.get_color_image();
-        depthImage = tempcapture.get_depth_image();
-        cv::Mat cv_color = color_to_opencv(colorImage);
-        cv::Mat cv_depth = depth_to_opencv(depthImage);
-        std::string dep_came_path = save_dep_path + "/" + name_list[i] + ".png";
-        std::string color_came_path =
-            save_color_path + "/" + name_list[i] + ".png";
-        std::string point_cloud_path =
-            save_point_cloud_path + "/" + name_list[i] + ".pcd";
-        // 保存rgb和depth图像
-        cv::imwrite(color_came_path, cv_color);
-        cv::imwrite(dep_came_path, cv_depth);
-        if (need_show) {
-          // 生成点云
-          k4a::image dep_data = k4a::image::create_from_buffer(
-              K4A_IMAGE_FORMAT_DEPTH16, cv_depth.size().width,
-              cv_depth.size().height,
-              cv_depth.size().width * static_cast<int>(sizeof(uint16_t)),
-              cv_depth.data,
-              cv_depth.size().height * cv_depth.size().width *
-                  static_cast<int>(sizeof(uint8_t)),
-              NULL, NULL);
-          k4a::transformation trans(cali_list[i]);
 
-          k4a::image trans_dep = create_depth_image_like(
-              cv_color.size().width, cv_color.size().height);
-          k4a::image cloud_image = k4a::image::create(
-              K4A_IMAGE_FORMAT_CUSTOM, cv_color.size().width,
-              cv_color.size().height,
-              cv_color.size().width * 3 * (int)sizeof(int16_t));  //点云
-          trans.depth_image_to_color_camera(dep_data, &trans_dep);
+      colorImage = capture.get_color_image();
+      depthImage = capture.get_depth_image();
+      cv::Mat cv_color = color_to_opencv(colorImage);
+      cv::Mat cv_depth = depth_to_opencv(depthImage);
+      std::string dep_came_path = save_dep_path + "/" + name_list[0] + ".png";
+      std::string color_came_path =
+          save_color_path + "/" + name_list[0] + ".png";
+      std::string point_cloud_path =
+          save_point_cloud_path + "/" + name_list[0] + ".pcd";
+      // 保存rgb和depth图像
+      cv::imwrite(color_came_path, cv_color);
+      cv::imwrite(dep_came_path, cv_depth);
+      if (need_show) {
+        // 生成点云
+        k4a::image dep_data = k4a::image::create_from_buffer(
+            K4A_IMAGE_FORMAT_DEPTH16, cv_depth.size().width,
+            cv_depth.size().height,
+            cv_depth.size().width * static_cast<int>(sizeof(uint16_t)),
+            cv_depth.data,
+            cv_depth.size().height * cv_depth.size().width *
+                static_cast<int>(sizeof(uint8_t)),
+            NULL, NULL);
+        k4a::transformation trans(cali_list[0]);
 
-          trans.depth_image_to_point_cloud(
-              trans_dep, K4A_CALIBRATION_TYPE_COLOR, &cloud_image);
-          pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
-              new pcl::PointCloud<pcl::PointXYZRGB>);
-          cloud->is_dense = true;
-          const int16_t* cloud_image_data =
-              reinterpret_cast<const int16_t*>(cloud_image.get_buffer());
-          int wid = cv_color.size().width;  //图片宽度
-          for (size_t h = 0; h < cv_color.size().height; h++) {
-            for (size_t w = 0; w < cv_color.size().width; w++) {
-              pcl::PointXYZRGB point;
-              size_t indx0 = h * wid + w;
-              point.x = cloud_image_data[3 * indx0 + 0] / 1000.0f;
-              point.y = cloud_image_data[3 * indx0 + 1] / 1000.0f;
-              point.z = cloud_image_data[3 * indx0 + 2] / 1000.0f;
+        k4a::image trans_dep = create_depth_image_like(cv_color.size().width,
+                                                       cv_color.size().height);
+        k4a::image cloud_image = k4a::image::create(
+            K4A_IMAGE_FORMAT_CUSTOM, cv_color.size().width,
+            cv_color.size().height,
+            cv_color.size().width * 3 * (int)sizeof(int16_t));  //点云
+        trans.depth_image_to_color_camera(dep_data, &trans_dep);
 
-              point.b = cv_color.at<cv::Vec3b>(h, w)[0];
-              point.g = cv_color.at<cv::Vec3b>(h, w)[1];
-              point.r = cv_color.at<cv::Vec3b>(h, w)[2];
-              if (point.x == 0 && point.y == 0 && point.z == 0) continue;
-              cloud->push_back(point);
-            }
-          }
-          if (need_show) {
-            pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
-          }
-          if (i == 0) {
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr trans_cloud(
-                new pcl::PointCloud<pcl::PointXYZRGB>);
-            pcl::transformPointCloud(*cloud, *trans_cloud,
-                                     trans_main_sub1);  // cow inverse sheep no
-            *result_cloud = (*result_cloud) + (*trans_cloud);
+        trans.depth_image_to_point_cloud(trans_dep, K4A_CALIBRATION_TYPE_COLOR,
+                                         &cloud_image);
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+            new pcl::PointCloud<pcl::PointXYZRGB>);
+        cloud->is_dense = true;
+        const int16_t* cloud_image_data =
+            reinterpret_cast<const int16_t*>(cloud_image.get_buffer());
+        int wid = cv_color.size().width;  //图片宽度
+        for (size_t h = 0; h < cv_color.size().height; h++) {
+          for (size_t w = 0; w < cv_color.size().width; w++) {
+            pcl::PointXYZRGB point;
+            size_t indx0 = h * wid + w;
+            point.x = cloud_image_data[3 * indx0 + 0] / 1000.0f;
+            point.y = cloud_image_data[3 * indx0 + 1] / 1000.0f;
+            point.z = cloud_image_data[3 * indx0 + 2] / 1000.0f;
 
-          } else if (i == 2) {
-            pcl::PointCloud<pcl::PointXYZRGB>::Ptr trans_cloud(
-                new pcl::PointCloud<pcl::PointXYZRGB>);
-            pcl::transformPointCloud(*cloud, *trans_cloud, trans_sub2_sub1);
-            *result_cloud = (*result_cloud) + (*trans_cloud);
-          } else {
-            *result_cloud = (*result_cloud) + (*cloud);
+            point.b = cv_color.at<cv::Vec3b>(h, w)[0];
+            point.g = cv_color.at<cv::Vec3b>(h, w)[1];
+            point.r = cv_color.at<cv::Vec3b>(h, w)[2];
+            if (point.x == 0 && point.y == 0 && point.z == 0) continue;
+            cloud->push_back(point);
           }
         }
-        colorImage.reset();
-        depthImage.reset();
-        cv_color.release();
-        cv_depth.release();
+        pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
       }
-      if (need_show) {
-        pcl::io::savePCDFileASCII(whole_point_cloud_path, *result_cloud);
-      }
+      colorImage.reset();
+      depthImage.reset();
+      cv_color.release();
+      cv_depth.release();
     }
   }
 }
