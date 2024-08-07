@@ -114,7 +114,9 @@ void DAQ_System::on_captureButton_clicked(const cv::Point& center,
       cv::Mat cv_color = color_to_opencv(colorImage);
       cv::Point view_center(cv_color.cols / 2, cv_color.rows / 2);
       if (cv::norm(view_center - center) < 50 && !current_record_cow.saved) {
-        std::string show_dir_path = "F:/DAQ_System/data/show_data/" + std::to_string(current_record_cow.cow_index);
+        std::string show_dir_path =
+            "F:/DAQ_System/data/show_data/" +
+            std::to_string(current_record_cow.cow_index);
         save_all_data(show_dir_path, true, captures);
         current_record_cow.saved = true;
       }
@@ -495,9 +497,12 @@ void DAQ_System::save_all_data(const std::string save_dir, const bool need_show,
     std::string save_dep_path = save_dir + "/depth";
     std::string save_color_path = save_dir + "/color";
     std::string save_point_cloud_path = save_dir + "/point_cloud";
+    bool flag = true;
+    if (need_show) {
+      flag = _mkdir(save_point_cloud_path.c_str());
+    }
     if (_mkdir(save_dep_path.c_str()) == 0 &&
-        _mkdir(save_color_path.c_str()) == 0 &&
-        _mkdir(save_point_cloud_path.c_str()) == 0) {
+        _mkdir(save_color_path.c_str()) == 0 && flag) {
       k4a::image colorImage;
       k4a::image depthImage;
       pcl::PointCloud<pcl::PointXYZRGB>::Ptr result_cloud(
@@ -514,8 +519,8 @@ void DAQ_System::save_all_data(const std::string save_dir, const bool need_show,
         std::string dep_came_path = save_dep_path + "/" + name_list[i] + ".png";
         std::string color_came_path =
             save_color_path + "/" + name_list[i] + ".png";
-        // std::string point_cloud_path =
-        //    save_point_cloud_path + "/" + name_list[i] + ".pcd";
+        std::string point_cloud_path =
+            save_point_cloud_path + "/" + name_list[i] + ".pcd";
         // ±£´ærgbºÍdepthÍ¼Ïñ
         cv::imwrite(color_came_path, cv_color);
         cv::imwrite(dep_came_path, cv_depth);
@@ -562,7 +567,9 @@ void DAQ_System::save_all_data(const std::string save_dir, const bool need_show,
               cloud->push_back(point);
             }
           }
-          // pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
+          if (need_show) {
+            pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
+          }
           if (i == 0) {
             pcl::PointCloud<pcl::PointXYZRGB>::Ptr trans_cloud(
                 new pcl::PointCloud<pcl::PointXYZRGB>);
