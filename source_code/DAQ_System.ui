@@ -30,30 +30,17 @@
     <number>20</number>
    </property>
    <item>
-    <layout class="QHBoxLayout" name="mainLayout" stretch="1,2">
+    <layout class="QHBoxLayout" name="mainLayout" stretch="1,1">
      <property name="spacing">
       <number>20</number>
      </property>
      <item>
-      <layout class="QVBoxLayout" name="leftImageLayout" stretch="0,0">
+      <layout class="QVBoxLayout" name="leftImageLayout" stretch="0">
        <property name="spacing">
         <number>20</number>
        </property>
        <item>
         <widget class="QLabel" name="subView1">
-         <property name="minimumSize">
-          <size>
-           <width>300</width>
-           <height>300</height>
-          </size>
-         </property>
-         <property name="styleSheet">
-          <string notr="true">background-color: black; border: 2px solid #4CAF50; border-radius: 10px;</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLabel" name="subView2">
          <property name="minimumSize">
           <size>
            <width>300</width>

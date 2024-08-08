@@ -1,7 +1,4 @@
-﻿  uic DAQ_System.ui
-  rcc DAQ_System.qrc
-  moc DAQ_System.h
-   RCC: Warning: No resources in 'F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.qrc'.
+﻿  Reading Qt configuration (F:/Qt/Qt5.14.2/5.14.2/msvc2017_64/bin/qmake)
   tinystr.cpp
   tinyxml.cpp
   tinyxmlerror.cpp
@@ -15,9 +12,7 @@ F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacke
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
-  qrc_DAQ_System.cpp
-  moc_DAQ_System.cpp
-F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
-  DAQ_System.vcxproj -> F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Debug\DAQ_System.exe
+F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.h(98,38): error C2535: “void DAQ_System::show_pseudo_color_img(cv::Mat)”: 已经定义或声明成员函数 (编译源文件 DAQ_System.cpp)
+F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.h(86): message : 参见“DAQ_System::show_pseudo_color_img”的声明 (编译源文件 DAQ_System.cpp)
+F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.h(98,38): error C2535: “void DAQ_System::show_pseudo_color_img(cv::Mat)”: 已经定义或声明成员函数 (编译源文件 main.cpp)
+F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.h(86): message : 参见“DAQ_System::show_pseudo_color_img”的声明 (编译源文件 main.cpp)

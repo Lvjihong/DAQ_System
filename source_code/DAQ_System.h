@@ -1,14 +1,12 @@
 #pragma once
-#include "ui_DAQ_System.h"
-#include <iostream>
-#include <windows.h>
-
 #include <direct.h>
 #include <signal.h>
 #include <stdio.h>
+#include <windows.h>
 
 #include <chrono>
 #include <ctime>
+#include <iostream>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/ocl.hpp>
@@ -20,6 +18,7 @@
 #include <vector>
 
 #include "conio.h"
+#include "ui_DAQ_System.h"
 using std::cerr;
 using std::cout;
 using std::endl;
@@ -84,14 +83,19 @@ class DAQ_System : public QWidget {
  protected:
   void closeEvent(QCloseEvent* event) override;
  signals:
+  void showPseudoColorImg(cv::Mat);
   void show_img(cv::Mat);
-  void save_data(const cv::Point& center, const int cow_index, const k4a::capture capture);
+
+  void save_data(const cv::Point& center, const int cow_index,
+                 const k4a::capture capture);
 
  public slots:
   void on_startButton_clicked();
-  void on_captureButton_clicked(const cv::Point& center, const int cow_index, const k4a::capture capture);
+  void on_captureButton_clicked(const cv::Point& center, const int cow_index,
+                                const k4a::capture capture);
   void on_stopButton_clicked();
   void updateFrame();
+  void show_pseudo_color_img(cv::Mat);
   void showImg(cv::Mat img);
 
  private:
@@ -102,9 +106,9 @@ class DAQ_System : public QWidget {
   int cow_index = 0;             //经过牛的索引
 
   QTimer* timer;
-  //std::unique_ptr<MultiDeviceCapturer> capturer;
-  //k4a_device_configuration_t main_config;
-  //k4a_device_configuration_t secondary_config;
+  // std::unique_ptr<MultiDeviceCapturer> capturer;
+  // k4a_device_configuration_t main_config;
+  // k4a_device_configuration_t secondary_config;
   k4a::device device;
   k4a::capture capture;
   k4a_device_configuration_t config;

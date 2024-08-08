@@ -31,6 +31,8 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
           &DAQ_System::on_stopButton_clicked);
   connect(timer, &QTimer::timeout, this, &DAQ_System::updateFrame);
   connect(this, &DAQ_System::show_img, this, &DAQ_System::showImg);
+  connect(this, &DAQ_System::showPseudoColorImg, this,
+          &DAQ_System::show_pseudo_color_img);
   connect(this, &DAQ_System::save_data, this,
           &DAQ_System::on_captureButton_clicked);
 }
@@ -55,7 +57,7 @@ void DAQ_System::init_cameras() {
   int color_res = 1;
   int dep_mode = 3;
   int fps = 2;
-  int32_t color_exposure_usec = 33000;
+  int32_t color_exposure_usec = 1000;
   int32_t powerline_freq = 1;  // default to a 60 Hz powerline£¬1for 50hz
   std::string root_dir = "F:/DAQ_System/";
 
@@ -130,7 +132,8 @@ void DAQ_System::on_startButton_clicked() {
 }
 
 void DAQ_System::on_captureButton_clicked(const cv::Point& center,
-                                          const int cow_index, const k4a::capture capture) {
+                                          const int cow_index,
+                                          const k4a::capture capture) {
   if (isCameraRunning) {
     std::thread([=]() {
       std::string root_dir_path = "F:/DAQ_System/data/saved_data";
@@ -150,7 +153,8 @@ void DAQ_System::on_captureButton_clicked(const cv::Point& center,
       std::stringstream ss;
       ss << root_dir_path << "/"
          << std::put_time(std::localtime(&raw_time), "%Y-%m-%d-%H-%M-%S");
-      std::string save_dir = ss.str();
+      std::string save_dir =
+          ss.str() + "cow" + std::to_string(current_record_cow.cow_index);
       save_all_data(save_dir, false, capture);
     }).detach();
   }
@@ -163,7 +167,7 @@ void DAQ_System::on_stopButton_clicked() {
     blackImage.fill(Qt::black);
     ui.mainView->setPixmap(QPixmap::fromImage(blackImage));
     ui.subView1->setPixmap(QPixmap::fromImage(blackImage));
-    ui.subView2->setPixmap(QPixmap::fromImage(blackImage));
+    // ui.subView2->setPixmap(QPixmap::fromImage(blackImage));
     capture.reset();
     device.stop_cameras();
     isCameraRunning = false;
@@ -186,7 +190,7 @@ void DAQ_System::updateFrame() {
     cv::Mat color_img_clone = cv_color.clone();
 
     count++;
-    if (!detected || count % 15 == 0) {
+    if (!detected || count % 5 == 0) {
       DetectResult result = yolo.Detect_with_result(color_img_clone, net);
       if (!result.indices.empty()) {
         bbox = result.boxes[result.indices[0]];
@@ -250,7 +254,10 @@ void DAQ_System::updateFrame() {
       }
     }
     emit(show_img(color_img_clone));
-
+    cv::Mat pseudo_color_img;
+    cv::normalize(cv_depth, cv_depth, 0, 255, cv::NORM_MINMAX, CV_8U);
+    cv::applyColorMap(cv_depth, pseudo_color_img, cv::COLORMAP_JET);
+    emit(show_pseudo_color_img(pseudo_color_img));
     colorImage.reset();
     depthImage.reset();
     color_img_clone.release();
@@ -260,6 +267,9 @@ void DAQ_System::updateFrame() {
 }
 void DAQ_System::showImg(cv::Mat cv_color) {
   ui.mainView->setPixmap(QPixmap::fromImage(opencv_to_QImage(cv_color)));
+}
+void DAQ_System::show_pseudo_color_img(cv::Mat cv_color) {
+  ui.subView1->setPixmap(QPixmap::fromImage(opencv_to_QImage(cv_color)));
 }
 QImage DAQ_System::opencv_to_QImage(cv::Mat cvImg) {
   QImage qImg;
