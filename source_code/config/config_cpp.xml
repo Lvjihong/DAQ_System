@@ -3,11 +3,11 @@
     <master_idx>1</master_idx>
     <sub1_idx>0</sub1_idx>
     <sub2_idx>2</sub2_idx>
-    <color_res>1</color_res>
+    <color_res>2</color_res>
     <!--1:720p;2:1080p;3:1440p;4:1536p;5:2160p;6:3072p-->
     <dep_mode>3</dep_mode>
     <!--1:NFOV_2X2BINNED;2:NFOV_UNBINNED;3:WFOV_2X2BINNED;4:WFOV_UNBINNED;5:PASSIVE_IR-->
-    <exposure>33000</exposure>
+    <exposure>2000</exposure>
     <fps>2</fps>
     <!--0:5fps;1:15fps;2:30fps-->
     <save_dir>./data</save_dir>

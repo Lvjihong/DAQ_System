@@ -25,14 +25,14 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
   connect(ui.btnStartUp, &QPushButton::clicked, this,
           &DAQ_System::on_startButton_clicked);
 
-  // connect(ui.btnCapture, &QPushButton::clicked, this,
-  //        &DAQ_System::on_captureButton_clicked);
+  connect(ui.btnCapture, &QPushButton::clicked, this,
+          &DAQ_System::captureButton_clicked);
   connect(ui.btnShutdown, &QPushButton::clicked, this,
           &DAQ_System::on_stopButton_clicked);
   connect(timer, &QTimer::timeout, this, &DAQ_System::updateFrame);
   connect(this, &DAQ_System::show_img, this, &DAQ_System::showImg);
-  connect(this, &DAQ_System::save_data, this,
-          &DAQ_System::on_captureButton_clicked);
+  //connect(this, &DAQ_System::save_data, this,
+  //        &DAQ_System::on_captureButton_clicked);
 }
 
 DAQ_System::~DAQ_System() { on_stopButton_clicked(); }
@@ -100,7 +100,26 @@ void DAQ_System::on_startButton_clicked() {
     timer->start(30);
   }
 }
-
+void DAQ_System::captureButton_clicked() {
+  if (isCameraRunning) {
+    vector<k4a::capture> captures =
+        capturer->get_synchronized_captures(secondary_config, true);
+    std::thread([=]() {
+      std::string root_dir_path = "F:/DAQ_System/data/saved_data";
+      k4a::capture tempcapture = captures[0];
+      k4a::image colorImage = tempcapture.get_color_image();
+      cv::Mat cv_color = color_to_opencv(colorImage);
+      auto tp = std::chrono::system_clock::now();
+      time_t raw_time = std::chrono::system_clock::to_time_t(tp);
+      std::stringstream ss;
+      ss << root_dir_path << "/"
+         << std::put_time(std::localtime(&raw_time), "%Y-%m-%d-%H-%M-%S");
+      std::string save_dir =
+          ss.str() + "cow--" + std::to_string(current_record_cow.cow_index);
+      save_all_data(save_dir, false, captures);
+    }).detach();
+  }
+}
 void DAQ_System::on_captureButton_clicked(const cv::Point& center,
                                           const int cow_index) {
   if (isCameraRunning) {
@@ -125,7 +144,8 @@ void DAQ_System::on_captureButton_clicked(const cv::Point& center,
       std::stringstream ss;
       ss << root_dir_path << "/"
          << std::put_time(std::localtime(&raw_time), "%Y-%m-%d-%H-%M-%S");
-      std::string save_dir = ss.str();
+      std::string save_dir =
+          ss.str() + std::to_string(current_record_cow.cow_index);
       save_all_data(save_dir, false, captures);
     }).detach();
   }

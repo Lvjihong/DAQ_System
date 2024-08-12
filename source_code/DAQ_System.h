@@ -93,6 +93,7 @@ class DAQ_System : public QWidget {
   void on_stopButton_clicked();
   void updateFrame();
   void showImg(cv::Mat img);
+  void captureButton_clicked();
 
  private:
   Ui::DAQ_SystemClass ui;
