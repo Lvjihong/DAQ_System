@@ -14,7 +14,7 @@ class Yolov8 {
   ~Yolov8() {}
 
   bool ReadModel(cv::dnn::Net& net, std::string& netPath, bool isCuda);
-  bool Detect(cv::Mat& srcImg, cv::dnn::Net& net);
+
   DetectResult Detect_with_result(cv::Mat& srcImg,
                                              cv::dnn::Net& net);
   void preprocess(const cv::Mat& image, cv::Mat& blob, cv::Vec4d& params, int input_width,

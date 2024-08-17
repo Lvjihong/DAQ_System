@@ -5,37 +5,3 @@ QMAKE_CXX.COMPILER_MACROS = \
     QT_COMPILER_STDCXX \
     QMAKE_MSC_VER \
     QMAKE_MSC_FULL_VER
-QMAKE_CXX.INCDIRS = \
-    F:\\MicrosoftVisualStudio\\Source\\Repos\\DAQ_System\\x64\\Release\\include \
-    "C:\\Program Files\\Azure Kinect SDK v1.4.1\\sdk\\include" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\Eigen\\eigen3" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\Boost\\include\\boost-1_78" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\Qhull\\include" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\FLANN\\include" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\VTK\\include\\vtk-9.1" \
-    "F:\\PCL 1.12.1-rc1\\include\\pcl-1.12" \
-    F:\\opencv\\build_4.10.0\\install\\include\\opencv2 \
-    F:\\opencv\\build_4.10.0\\install\\include \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\include \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\atlmfc\\include \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Auxiliary\\VS\\include \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.19041.0\\ucrt" \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Auxiliary\\VS\\UnitTest\\include \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.19041.0\\um" \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.19041.0\\shared" \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.19041.0\\winrt" \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\Include\\10.0.19041.0\\cppwinrt" \
-    "C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\Include\\um"
-QMAKE_CXX.LIBDIRS = \
-    F:\\MicrosoftVisualStudio\\Source\\Repos\\DAQ_System\\x64\\Debug\\lib \
-    F:\\MicrosoftVisualStudio\\Source\\Repos\\DAQ_System\\x64\\Release\\lib \
-    "C:\\Program Files\\Azure Kinect SDK v1.4.1\\sdk\\windows-desktop\\amd64\\release\\lib" \
-    "F:\\PCL 1.12.1-rc1\\3rdParty\\VTK\\lib" \
-    F:\\opencv\\build_4.10.0\\install\\x64\\vc16\\lib \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\lib\\x64 \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Tools\\MSVC\\14.29.30133\\atlmfc\\lib\\x64 \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Auxiliary\\VS\\lib\\x64 \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.19041.0\\ucrt\\x64" \
-    F:\\MicrosoftVisualStudio\\2019\\Community\\VC\\Auxiliary\\VS\\UnitTest\\lib \
-    "C:\\Program Files (x86)\\Windows Kits\\10\\lib\\10.0.19041.0\\um\\x64" \
-    "C:\\Program Files (x86)\\Windows Kits\\NETFXSDK\\4.8\\lib\\um\\x64"

@@ -1,14 +1,25 @@
 ﻿  uic DAQ_System.ui
+  rcc DAQ_System.qrc
+  moc DAQ_System.h
+   RCC: Warning: No resources in 'F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\DAQ_System.qrc'.
+  tinystr.cpp
+  tinyxml.cpp
+  tinyxmlerror.cpp
+  tinyxmlparser.cpp
+  YOLOv8.cpp
   DAQ_System.cpp
   main.cpp
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 DAQ_System.cpp)
+F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 DAQ_System.cpp)
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
-F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 DAQ_System.cpp)
-F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 DAQ_System.cpp)
+F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失 (编译源文件 main.cpp)
+  qrc_DAQ_System.cpp
   moc_DAQ_System.cpp
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\Half.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\BFloat16.h(1,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
 F:\PCL 1.12.1-rc1\3rdParty\Eigen\eigen3\Eigen\src\Core\arch\Default\GenericPacketMathFunctions.h(676,1): warning C4819: 该文件包含不能在当前代码页(936)中表示的字符。请将该文件保存为 Unicode 格式以防止数据丢失
+LIBCMT.lib(initializers.obj) : warning LNK4098: 默认库“msvcrt.lib”与其他库的使用冲突；请使用 /NODEFAULTLIB:library
+qtmain.lib(qtmain_win.obj) : warning LNK4099: 未找到 PDB“qtmain.pdb”(使用“qtmain.lib(qtmain_win.obj)”或在“F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\qtmain.pdb”中寻找)；正在链接对象，如同没有调试信息一样
   DAQ_System.vcxproj -> F:\MicrosoftVisualStudio\Source\Repos\DAQ_System\x64\Release\DAQ_System.exe

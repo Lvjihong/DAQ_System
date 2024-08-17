@@ -55,6 +55,9 @@
     <ClCompile Include="YOLOv8.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="KinectWorker.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MultiDeviceCapturer.h">
@@ -72,5 +75,10 @@
     <ClInclude Include="YOLOv8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtMoc Include="KinectWorker.h">
+      <Filter>Header Files</Filter>
+    </QtMoc>
   </ItemGroup>
 </Project>
