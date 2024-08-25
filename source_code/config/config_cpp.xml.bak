@@ -5,12 +5,12 @@
     <dep_mode>3</dep_mode>
     <!--1:NFOV_2X2BINNED;2:NFOV_UNBINNED;3:WFOV_2X2BINNED;4:WFOV_UNBINNED;5:PASSIVE_IR-->
     <exposure>2000</exposure>
-    <fps>2</fps>
+    <fps>1</fps>
     <!--0:5fps;1:15fps;2:30fps-->
-    <save_dir>./data</save_dir>
-	<threshold_distance>400</threshold_distance>
-	<threshold_bbox_width>600</threshold_bbox_width>
-	<threshold_bbox_width>350</threshold_bbox_width>
+    <save_dir>D:\\VisualStudio\\Repos\\Single_Vision_DAQ_System\\data\\</save_dir>
+    <threshold_distance>600</threshold_distance>
+    <threshold_bbox_width>600</threshold_bbox_width>
+    <threshold_bbox_height>350</threshold_bbox_height>
     <!--单位：m-->
     <dis1>
         <dis_serial>COM7</dis_serial>
@@ -24,20 +24,20 @@
         <wait_time>120</wait_time>
     </rfid1>
     <!--***************************************************************-->
-	<cali>
+    <cali>
         <d2c>
-            <a1>0.999998</a1>
-            <a2>0.001783</a2>
-            <a3>0.000326</a3>
-            <a4>-31.950068</a4>
-            <b1>-0.001809</b1>
-            <b2>0.992949</b2>
-            <b3>0.118530</b3>
-            <b4>-1.695522</b4>
-            <c1>-0.000112</c1>
-            <c2>-0.118531</c2>
-            <c3>0.992950</c3>
-            <c4>4.034662</c4>
+            <a1>1.000000</a1>
+            <a2>-0.000644</a2>
+            <a3>-0.000626</a3>
+            <a4>-32.017918</a4>
+            <b1>0.000712</b1>
+            <b2>0.993369</b2>
+            <b3>0.114967</b3>
+            <b4>-1.782975</b4>
+            <c1>0.000548</c1>
+            <c2>-0.114967</c2>
+            <c3>0.993369</c3>
+            <c4>3.850965</c4>
             <d1>0</d1>
             <d2>0</d2>
             <d3>0</d3>
@@ -45,38 +45,38 @@
         </d2c>
         <!--单位：mm-->
         <c2cloud>
-            <fx>608.890625</fx>
-            <fy>608.750366</fy>
-            <cx>639.025696</cx>
-            <cy>364.488464</cy>
-            <k1>0.255607</k1>
-            <k2>-2.736828</k2>
-            <k3>1.783542</k3>
-            <k4>0.137373</k4>
-            <k5>-2.540007</k5>
-            <k6>1.691066</k6>
+            <fx>909.996582</fx>
+            <fy>909.760071</fy>
+            <cx>965.066284</cx>
+            <cy>543.148071</cy>
+            <k1>-0.190608</k1>
+            <k2>-2.446424</k2>
+            <k3>1.874400</k3>
+            <k4>-0.307460</k4>
+            <k5>-2.222617</k5>
+            <k6>1.756345</k6>
             <codx>0.000000</codx>
             <cody>0.000000</cody>
-            <p2>-0.000351</p2>
-            <p1>0.001886</p1>
+            <p2>-0.000600</p2>
+            <p1>0.000342</p1>
             <metric_radius>0.000000</metric_radius>
         </c2cloud>
         <d2cloud>
-            <fx>251.786911</fx>
-            <fy>251.768066</fy>
-            <cx>256.793243</cx>
-            <cy>256.365295</cy>
-            <k1>4.787981</k1>
-            <k2>3.197126</k2>
-            <k3>0.165954</k3>
-            <k4>5.118636</k4>
-            <k5>4.782151</k5>
-            <k6>0.872859</k6>
+            <fx>251.536774</fx>
+            <fy>251.525040</fy>
+            <cx>257.952759</cx>
+            <cy>257.543518</cy>
+            <k1>0.534850</k1>
+            <k2>-0.025622</k2>
+            <k3>-0.002721</k3>
+            <k4>0.877149</k4>
+            <k5>0.076684</k5>
+            <k6>-0.014616</k6>
             <codx>0.000000</codx>
             <cody>0.000000</cody>
-            <p2>0.000008</p2>
-            <p1>0.000079</p1>
+            <p2>0.000029</p2>
+            <p1>0.000035</p1>
             <metric_radius>0.000000</metric_radius>
         </d2cloud>
-	</cali>
+    </cali>
 </Argument>

@@ -4,11 +4,11 @@
     <!--1:720p;2:1080p;3:1440p;4:1536p;5:2160p;6:3072p-->
     <dep_mode>3</dep_mode>
     <!--1:NFOV_2X2BINNED;2:NFOV_UNBINNED;3:WFOV_2X2BINNED;4:WFOV_UNBINNED;5:PASSIVE_IR-->
-    <exposure>2000</exposure>
-    <fps>2</fps>
+    <exposure>1000</exposure>
+    <fps>1</fps>
     <!--0:5fps;1:15fps;2:30fps-->
-    <save_dir>./data/</save_dir>
-    <threshold_distance>400</threshold_distance>
+    <save_dir>D:\\VisualStudio\\Repos\\Single_Vision_DAQ_System\\data\\</save_dir>
+    <threshold_distance>600</threshold_distance>
     <threshold_bbox_width>600</threshold_bbox_width>
     <threshold_bbox_height>350</threshold_bbox_height>
     <!--单位：m-->
@@ -45,10 +45,10 @@
         </d2c>
         <!--单位：mm-->
         <c2cloud>
-            <fx>606.664368</fx>
-            <fy>606.506714</fy>
-            <cx>643.210876</cx>
-            <cy>361.932037</cy>
+            <fx>909.996582</fx>
+            <fy>909.760071</fy>
+            <cx>965.066284</cx>
+            <cy>543.148071</cy>
             <k1>-0.190608</k1>
             <k2>-2.446424</k2>
             <k3>1.874400</k3>

@@ -126,6 +126,7 @@ private:
 	bool isCameraRunning = false;  //是否相机开启
 	int cow_index = 0;             //经过牛的索引
 	std::string root_dir_path = "./data/";
+	std::string saved_path = root_dir_path + "saved_path/";
 
 	QTimer* timer;
 

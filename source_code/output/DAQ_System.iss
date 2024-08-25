@@ -44,7 +44,7 @@ Source: "D:\Qt\Qt5.14.2\5.14.2\msvc2017_64\plugins\*"; DestDir: "{app}"; Flags: 
 Source: "C:\Windows\System32\kernel32.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Windows\SysWOW64\shell32.dll"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Windows\SysWOW64\advapi32.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "D:\VisualStudio\Repos\Single_Vision_DAQ_System\weights\last_best.onnx"; DestDir: "{app}\weights"; Flags: ignoreversion
+Source: "D:\VisualStudio\Repos\Single_Vision_DAQ_System\weights\best.onnx"; DestDir: "{app}\weights"; Flags: ignoreversion
 Source: "D:\VisualStudio\Repos\Single_Vision_DAQ_System\config\config_cpp.xml"; DestDir: "{app}\config"; Flags: ignoreversion
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 

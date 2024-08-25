@@ -18,7 +18,7 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
 	// 初始化相机，如果没连接摄像头程序无法启动
 	init_cameras();
 	// 初始化当前记录的目标
-	cv::Rect init_bbox = cv::Rect(1280, 0, 1, 1);
+	cv::Rect init_bbox = cv::Rect(0, 0, 1, 1);
 	current_record_cow.bbox = init_bbox;
 	current_record_cow.center_x =
 		init_bbox.x + static_cast<float>(init_bbox.width) / 2.0f;
@@ -30,7 +30,7 @@ DAQ_System::DAQ_System(QWidget* parent) : QWidget(parent) {
 
 	timer = new QTimer(this);
 	// 加载模型
-	std::string model_path = "./weights/last_best.onnx";
+	std::string model_path = "./weights/best.onnx";
 	yolo.ReadModel(net, model_path, true);
 
 	connect(ui.btnStartUp, &QPushButton::clicked, this,
@@ -437,7 +437,7 @@ void DAQ_System::xmlparse(vector<uint32_t>& device_indices,
 
 void DAQ_System::xml_parse(int& color_res, int& dep_mode, int& exposure, int& fps, std::string& save_dir, double& threshold_distance, int& threshold_bbox_width, int& threshold_bbox_height)
 {
-	std::string filePath = "./config/config.xml";
+	std::string filePath = "config/config_cpp.xml";
 
 	// 加载XML文件
 	TiXmlDocument doc(filePath.c_str());
@@ -481,6 +481,22 @@ void DAQ_System::xml_parse(int& color_res, int& dep_mode, int& exposure, int& fp
 	element = root->FirstChildElement("save_dir");
 	if (element) {
 		save_dir = element->GetText();
+		// 获取当前时间
+		std::time_t now = std::time(nullptr);
+		std::tm* local_time = std::localtime(&now);
+
+		// 格式化时间为 "Y-M-D-H-M-S"
+		char time_str[20];
+		std::strftime(time_str, sizeof(time_str), "%Y-%m-%d-%H-%M-%S", local_time);
+
+		saved_path = save_dir + "saved_data/" + time_str;
+
+		// 创建最终的子目录
+		if (mkdir(saved_path.c_str()) != 0) {
+			std::cerr << "Failed to create directory: " << saved_path << std::endl;
+			return;
+		}
+
 	}
 
 	// 解析threshold_distance
@@ -696,51 +712,51 @@ void DAQ_System::save_all_data(const std::string save_path, const bool need_show
 	cv::imwrite(color_path, color_img);
 	cv::imwrite(dep_path, depth_img);
 
-	if (need_show) {
-		// 生成点云
-		k4a::image dep_data = k4a::image::create_from_buffer(
-			K4A_IMAGE_FORMAT_DEPTH16, depth_img.size().width,
-			depth_img.size().height,
-			depth_img.size().width * static_cast<int>(sizeof(uint16_t)),
-			depth_img.data,
-			depth_img.size().height * depth_img.size().width *
-			static_cast<int>(sizeof(uint8_t)),
-			NULL, NULL);
-		k4a::transformation trans(cali);
+	//if (need_show) {
+	//	// 生成点云
+	//	k4a::image dep_data = k4a::image::create_from_buffer(
+	//		K4A_IMAGE_FORMAT_DEPTH16, depth_img.size().width,
+	//		depth_img.size().height,
+	//		depth_img.size().width * static_cast<int>(sizeof(uint16_t)),
+	//		depth_img.data,
+	//		depth_img.size().height * depth_img.size().width *
+	//		static_cast<int>(sizeof(uint8_t)),
+	//		NULL, NULL);
+	//	k4a::transformation trans(cali);
 
-		k4a::image trans_dep = create_depth_image_like(color_img.size().width,
-			color_img.size().height);
-		k4a::image cloud_image = k4a::image::create(
-			K4A_IMAGE_FORMAT_CUSTOM, color_img.size().width,
-			color_img.size().height,
-			color_img.size().width * 3 * (int)sizeof(int16_t));  //点云
-		trans.depth_image_to_color_camera(dep_data, &trans_dep);
+	//	k4a::image trans_dep = create_depth_image_like(color_img.size().width,
+	//		color_img.size().height);
+	//	k4a::image cloud_image = k4a::image::create(
+	//		K4A_IMAGE_FORMAT_CUSTOM, color_img.size().width,
+	//		color_img.size().height,
+	//		color_img.size().width * 3 * (int)sizeof(int16_t));  //点云
+	//	trans.depth_image_to_color_camera(dep_data, &trans_dep);
 
-		trans.depth_image_to_point_cloud(trans_dep, K4A_CALIBRATION_TYPE_COLOR,
-			&cloud_image);
-		pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
-			new pcl::PointCloud<pcl::PointXYZRGB>);
-		cloud->is_dense = true;
-		const int16_t* cloud_image_data =
-			reinterpret_cast<const int16_t*>(cloud_image.get_buffer());
-		int wid = color_img.size().width;  //图片宽度
-		for (size_t h = 0; h < color_img.size().height; h++) {
-			for (size_t w = 0; w < color_img.size().width; w++) {
-				pcl::PointXYZRGB point;
-				size_t indx0 = h * wid + w;
-				point.x = cloud_image_data[3 * indx0 + 0] / 1000.0f;
-				point.y = cloud_image_data[3 * indx0 + 1] / 1000.0f;
-				point.z = cloud_image_data[3 * indx0 + 2] / 1000.0f;
+	//	trans.depth_image_to_point_cloud(trans_dep, K4A_CALIBRATION_TYPE_COLOR,
+	//		&cloud_image);
+	//	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+	//		new pcl::PointCloud<pcl::PointXYZRGB>);
+	//	cloud->is_dense = true;
+	//	const int16_t* cloud_image_data =
+	//		reinterpret_cast<const int16_t*>(cloud_image.get_buffer());
+	//	int wid = color_img.size().width;  //图片宽度
+	//	for (size_t h = 0; h < color_img.size().height; h++) {
+	//		for (size_t w = 0; w < color_img.size().width; w++) {
+	//			pcl::PointXYZRGB point;
+	//			size_t indx0 = h * wid + w;
+	//			point.x = cloud_image_data[3 * indx0 + 0] / 1000.0f;
+	//			point.y = cloud_image_data[3 * indx0 + 1] / 1000.0f;
+	//			point.z = cloud_image_data[3 * indx0 + 2] / 1000.0f;
 
-				point.b = color_img.at<cv::Vec3b>(h, w)[0];
-				point.g = color_img.at<cv::Vec3b>(h, w)[1];
-				point.r = color_img.at<cv::Vec3b>(h, w)[2];
-				if (point.x == 0 && point.y == 0 && point.z == 0) continue;
-				cloud->push_back(point);
-			}
-		}
-		pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
-	}
+	//			point.b = color_img.at<cv::Vec3b>(h, w)[0];
+	//			point.g = color_img.at<cv::Vec3b>(h, w)[1];
+	//			point.r = color_img.at<cv::Vec3b>(h, w)[2];
+	//			if (point.x == 0 && point.y == 0 && point.z == 0) continue;
+	//			cloud->push_back(point);
+	//		}
+	//	}
+	//	pcl::io::savePCDFileASCII(point_cloud_path, *cloud);
+	//}
 }
 
 
@@ -787,9 +803,42 @@ void DAQ_System::image_capture_thread() {
 		}
 	}
 }
-
+// 测试
+//void DAQ_System::image_capture_thread() {
+//	cv::VideoCapture videoCapture("C:\\Users\\Administrator\\Desktop\\video.mp4");
+//
+//	while (isCameraRunning && videoCapture.isOpened()) {
+//		cv::Mat rgb_mat;
+//		if (videoCapture.read(rgb_mat)) {
+//			// 创建一个与 rgb_mat 尺寸相同的空深度图像，初始值为 0
+//			cv::Mat depth_mat = cv::Mat::zeros(rgb_mat.size(), CV_8UC1);
+//
+//			{
+//				std::lock_guard<std::mutex> locker(rgb_mutex);
+//				rgb_queue.push(rgb_mat.clone());
+//			}
+//			rgb_condition.notify_one();
+//
+//			{
+//				std::lock_guard<std::mutex> locker(depth_mutex);
+//				depth_queue.push(depth_mat.clone());
+//			}
+//			depth_condition.notify_one();
+//
+//			std::this_thread::sleep_for(std::chrono::milliseconds(200));  // 控制帧率
+//
+//			rgb_mat.release();
+//			depth_mat.release();
+//		}
+//		else {
+//			break;
+//		}
+//	}
+//
+//}
 void DAQ_System::image_handle_thread() {
 	while (true) {
+		count++;
 		cv::Mat rgb_frame;
 		{
 			std::unique_lock<std::mutex> locker(rgb_mutex);
@@ -801,7 +850,6 @@ void DAQ_System::image_handle_thread() {
 		cv::Rect bbox(0, 0, 1, 1);
 		cv::Mat color_img_clone = rgb_frame.clone();
 
-		count++;
 		float confidence = 0.0;
 		bool is_init = false;
 		if (need_detect || count % 5 == 0) {
@@ -820,13 +868,13 @@ void DAQ_System::image_handle_thread() {
 		if (!is_init) {
 			if (!need_detect) {
 				if (tracker->update(color_img_clone, bbox)) {
-					std::cout << "===========track success!============" << std::endl;
+					std::cout << count << "===========track success!============" << std::endl;
 					confidence = current_record_cow.confidence;
 				}
 				else
 				{
 					need_detect = true;
-					std::cout << "===========track failing!============" << std::endl;
+					std::cout << count << "===========track failing!============" << std::endl;
 				}
 			}
 		}
@@ -872,7 +920,7 @@ void DAQ_System::image_save_thread() {
 		// id管理
 		//double iou = calculateIoU(img_object.bbox, current_record_cow.bbox);
 		int distance = calculate_distance_of_centers_bbox(img_object.bbox, current_record_cow.bbox);
-		if (distance > THRESHOLD_DISTANCE)
+		if (distance > THRESHOLD_DISTANCE && ((img_object.bbox.x + img_object.bbox.width / 2) > img_object.img.cols / 2))
 		{
 			current_record_cow.cow_index++;
 			current_record_cow.saved = false;
@@ -898,10 +946,7 @@ void DAQ_System::image_save_thread() {
 		auto timestamp = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 
 		// 判断目标是否走到中心，true保存两次，false保存一次
-	/*	cv::Point view_center(img_object.img.cols / 2, img_object.img.rows / 2);
-		cv::Point bbox_center(img_object.bbox.x + img_object.bbox.width / 2, img_object.bbox.y + img_object.bbox.height / 2);*/
-		//if (cv::norm(view_center - bbox_center) < 200 && !current_record_cow.saved) {
-		if (((img_object.bbox.x + img_object.bbox.width / 2) >= img_object.img.cols / 2) && !current_record_cow.saved) {
+		if (((img_object.bbox.x + img_object.bbox.width / 2) <= img_object.img.cols / 2) && !current_record_cow.saved) {
 			std::string show_path =
 				root_dir_path + "show_data/"
 				+ std::to_string(timestamp) + "_cow" +
@@ -911,12 +956,10 @@ void DAQ_System::image_save_thread() {
 				save_all_data(show_path, true, img_object.img, depth_frame);
 				}).detach();
 		}
-		std::string save_path =
-			root_dir_path + "saved_data/"
-			+ std::to_string(timestamp) + "_cow" +
+		std::string cur_saved_path = saved_path + "/" + std::to_string(timestamp) + "cow" +
 			std::to_string(current_record_cow.cow_index);
 		std::thread([=]() {
-			save_all_data(save_path, false, img_object.img, depth_frame);
+			save_all_data(cur_saved_path, false, img_object.img, depth_frame);
 			}).detach();
 		depth_frame.release();
 	}

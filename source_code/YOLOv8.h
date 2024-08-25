@@ -28,13 +28,13 @@ class Yolov8 {
                  bool autoShape = false, bool scaleFill = false,
                  bool scaleUp = true, int stride = 32,
                  const cv::Scalar& color = cv::Scalar(
-                     114, 114, 114));  //改变图片的大小，使之符合网络的输入
+                     0, 0, 0));  //改变图片的大小，使之符合网络的输入
 
  private:
   std::vector<std::string> _className = {"cow"};
   const int input_width = 640;
   const int input_height = 640;
   const float confidence_threshold =
-      0.05;  // Minimum confidence for a detection to be considered
+      0.8;  // Minimum confidence for a detection to be considered
   const float nms_threshold = 0.5;  // Non-maximum suppression threshold
 };
