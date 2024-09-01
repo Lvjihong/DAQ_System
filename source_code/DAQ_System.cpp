@@ -770,48 +770,14 @@ void DAQ_System::startThreads() {
 	save_thread.detach();
 }
 
-void DAQ_System::image_capture_thread() {
-	while (isCameraRunning && capture) {
-		if (device.get_capture(&capture)) {
-			k4a::image rgb_image = capture.get_color_image();
-			cv::Mat rgb_mat = color_to_opencv(rgb_image);
-
-			k4a::image depth_image = capture.get_depth_image();
-			cv::Mat depth_mat = depth_to_opencv(depth_image);
-
-			{
-				std::lock_guard<std::mutex> locker(rgb_mutex);
-				rgb_queue.push(rgb_mat.clone());
-			}
-			rgb_condition.notify_one();
-
-			{
-				std::lock_guard<std::mutex> locker(depth_mutex);
-				depth_queue.push(depth_mat.clone());
-			}
-			depth_condition.notify_one();
-
-			std::this_thread::sleep_for(std::chrono::milliseconds(200));
-
-			rgb_image.reset();
-			rgb_mat.release();
-			depth_image.reset();
-			depth_mat.release();
-		}
-		else {
-			break;
-		}
-	}
-}
-// 测试
 //void DAQ_System::image_capture_thread() {
-//	cv::VideoCapture videoCapture("C:\\Users\\Administrator\\Desktop\\video.mp4");
+//	while (isCameraRunning && capture) {
+//		if (device.get_capture(&capture)) {
+//			k4a::image rgb_image = capture.get_color_image();
+//			cv::Mat rgb_mat = color_to_opencv(rgb_image);
 //
-//	while (isCameraRunning && videoCapture.isOpened()) {
-//		cv::Mat rgb_mat;
-//		if (videoCapture.read(rgb_mat)) {
-//			// 创建一个与 rgb_mat 尺寸相同的空深度图像，初始值为 0
-//			cv::Mat depth_mat = cv::Mat::zeros(rgb_mat.size(), CV_8UC1);
+//			k4a::image depth_image = capture.get_depth_image();
+//			cv::Mat depth_mat = depth_to_opencv(depth_image);
 //
 //			{
 //				std::lock_guard<std::mutex> locker(rgb_mutex);
@@ -825,17 +791,51 @@ void DAQ_System::image_capture_thread() {
 //			}
 //			depth_condition.notify_one();
 //
-//			std::this_thread::sleep_for(std::chrono::milliseconds(200));  // 控制帧率
+//			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 //
+//			rgb_image.reset();
 //			rgb_mat.release();
+//			depth_image.reset();
 //			depth_mat.release();
 //		}
 //		else {
 //			break;
 //		}
 //	}
-//
 //}
+// 测试
+void DAQ_System::image_capture_thread() {
+	cv::VideoCapture videoCapture("C:\\Users\\Administrator\\Desktop\\video.mp4");
+
+	while (isCameraRunning && videoCapture.isOpened()) {
+		cv::Mat rgb_mat;
+		if (videoCapture.read(rgb_mat)) {
+			// 创建一个与 rgb_mat 尺寸相同的空深度图像，初始值为 0
+			cv::Mat depth_mat = cv::Mat::zeros(rgb_mat.size(), CV_8UC1);
+
+			{
+				std::lock_guard<std::mutex> locker(rgb_mutex);
+				rgb_queue.push(rgb_mat.clone());
+			}
+			rgb_condition.notify_one();
+
+			{
+				std::lock_guard<std::mutex> locker(depth_mutex);
+				depth_queue.push(depth_mat.clone());
+			}
+			depth_condition.notify_one();
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(200));  // 控制帧率
+
+			rgb_mat.release();
+			depth_mat.release();
+		}
+		else {
+			break;
+		}
+	}
+
+}
 void DAQ_System::image_handle_thread() {
 	while (true) {
 		count++;
